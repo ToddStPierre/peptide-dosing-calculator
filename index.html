@@ -49,27 +49,22 @@
     font-size: 1.25rem;
     margin: 0 0 14px;
   }
-  .pills {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin-bottom: 14px;
-  }
-  .pill {
-    border: 1px solid #cfcfd4;
-    background: #fff;
+  select {
+    width: 100%;
+    padding: 12px 16px;
     border-radius: 999px;
-    padding: 8px 16px;
-    font-size: 0.9rem;
-    cursor: pointer;
+    border: 1px solid #cfcfd4;
+    font-size: 0.95rem;
+    background: #fff;
     color: var(--text);
-    transition: background 0.15s, color 0.15s, border-color 0.15s;
-  }
-  .pill:hover { border-color: #a8a8ae; }
-  .pill.active {
-    background: var(--accent);
-    color: var(--accent-text);
-    border-color: var(--accent);
+    margin-bottom: 14px;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b6b70' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 16px center;
+    background-size: 16px;
+    padding-right: 42px;
   }
   input[type="text"], input[type="number"] {
     width: 100%;
@@ -118,19 +113,19 @@
 
       <div>
         <h2>Strength of Peptide</h2>
-        <div class="pills" id="strengthPills"></div>
+        <select id="strengthSelect"></select>
         <input type="text" id="strengthCustom" placeholder="Enter custom strength (mg)">
       </div>
 
       <div>
-        <h2>Water of Peptide</h2>
-        <div class="pills" id="waterPills"></div>
+        <h2>Bacteriostatic Water</h2>
+        <select id="waterSelect"></select>
         <input type="text" id="waterCustom" placeholder="Enter custom water (mL)">
       </div>
 
       <div>
         <h2>Dose of Peptide</h2>
-        <div class="pills" id="dosePills"></div>
+        <select id="doseSelect"></select>
         <input type="text" id="doseCustom" placeholder="Enter custom dose (mg)">
       </div>
 
@@ -152,7 +147,7 @@
 </div>
 
 <script>
-const STRENGTHS = [1, 5, 10, 15, 20, 50];
+const STRENGTHS = [1, 2.5, 5, 10, 30, 60, 100, 200];
 const WATERS = [0.5, 1.0, 1.5, 2.0, 2.5, 3.0];
 const DOSES = [0.1, 0.25, 0.5, 1, 2, 2.5, 5, 7.5, 10, 12.5, 15];
 
@@ -166,39 +161,30 @@ function fmt(n) {
   return (Math.round(n * 100) / 100).toString();
 }
 
-function buildPills(containerId, values, unit, key) {
-  const el = document.getElementById(containerId);
+function buildSelect(selectId, values, unit, key) {
+  const el = document.getElementById(selectId);
   el.innerHTML = '';
   values.forEach(v => {
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'pill';
-    btn.textContent = v + unit;
-    btn.dataset.value = v;
-    btn.addEventListener('click', () => {
-      state[key] = v;
-      document.getElementById(key + 'Custom').value = '';
-      refreshActive(containerId, v);
-      calculate();
-    });
-    el.appendChild(btn);
+    const opt = document.createElement('option');
+    opt.value = v;
+    opt.textContent = v + unit;
+    el.appendChild(opt);
+  });
+  el.value = state[key];
+  el.addEventListener('change', () => {
+    state[key] = parseFloat(el.value);
+    document.getElementById(key + 'Custom').value = '';
+    calculate();
   });
 }
 
-function refreshActive(containerId, activeValue) {
-  const el = document.getElementById(containerId);
-  [...el.children].forEach(btn => {
-    btn.classList.toggle('active', parseFloat(btn.dataset.value) === activeValue);
-  });
-}
-
-function wireCustom(inputId, containerId, key) {
+function wireCustom(inputId, selectId, key) {
   const input = document.getElementById(inputId);
   input.addEventListener('input', () => {
     const v = parseFloat(input.value);
     if (!isNaN(v) && v > 0) {
       state[key] = v;
-      refreshActive(containerId, v);
+      document.getElementById(selectId).value = '';
       calculate();
     }
   });
@@ -271,16 +257,13 @@ function drawSyringe(units) {
   `;
 }
 
-buildPills('strengthPills', STRENGTHS, 'mg', 'strength');
-buildPills('waterPills', WATERS, 'mL', 'water');
-buildPills('dosePills', DOSES, 'mg', 'dose');
-wireCustom('strengthCustom', 'strengthPills', 'strength');
-wireCustom('waterCustom', 'waterPills', 'water');
-wireCustom('doseCustom', 'dosePills', 'dose');
+buildSelect('strengthSelect', STRENGTHS, 'mg', 'strength');
+buildSelect('waterSelect', WATERS, 'mL', 'water');
+buildSelect('doseSelect', DOSES, 'mg', 'dose');
+wireCustom('strengthCustom', 'strengthSelect', 'strength');
+wireCustom('waterCustom', 'waterSelect', 'water');
+wireCustom('doseCustom', 'doseSelect', 'dose');
 
-refreshActive('strengthPills', state.strength);
-refreshActive('waterPills', state.water);
-refreshActive('dosePills', state.dose);
 calculate();
 </script>
 </body>
