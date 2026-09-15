@@ -115,10 +115,12 @@
   svg { display: block; margin: -10px auto 0; max-width: 100%; height: auto; }
   .tick-label { font-size: 13px; fill: var(--muted); font-weight: 600; }
   footer {
-    text-align: center;
+    text-align: left;
     color: var(--muted);
-    font-size: 0.8rem;
-    margin-top: 8px;
+    font-size: 0.78rem;
+    line-height: 1.5;
+    max-width: 760px;
+    margin: 8px auto 0;
   }
 </style>
 </head>
@@ -166,8 +168,9 @@
     </div>
     <div class="warning" id="outWarning"></div>
     <svg id="syringe" viewBox="0 0 780 220" xmlns="http://www.w3.org/2000/svg"></svg>
-    <footer>This calculator is for reference only. Always confirm dosing with your prescribing clinician.</footer>
   </div>
+
+  <footer>Disclaimer: The information provided is a general reference and DOES NOT replace the clinical judgment of a licensed healthcare provider. Each provider is responsible for determining the appropriate diluent volume, concentration, dosage, and administration method based on individual patient factors and therapeutic goals. These materials are intended as an educational, value-added resource to support understanding of commonly observed wellness practices. All treatment and dosing decisions should be made by qualified professionals using their own knowledge, experience, and discretion. Our team does not provide medical or dosing advice and assumes no responsibility or liability for clinical decisions made using this information.</footer>
 
 </div>
 
