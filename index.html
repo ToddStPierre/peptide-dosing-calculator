@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Peptide Dosing Calculator</title>
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #f7f7f8;
+    --card: #ffffff;
+    --border: #e3e3e6;
+    --text: #1a1a1a;
+    --muted: #6b6b70;
+    --accent: #111111;
+    --accent-text: #ffffff;
+    --fill: #c9d9f2;
+    --barrel: #4a5568;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 24px 16px 48px;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  .wrap { max-width: 1100px; margin: 0 auto; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+    margin-bottom: 24px;
+  }
+  .groups {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 28px;
+  }
+  @media (max-width: 760px) {
+    .groups { grid-template-columns: 1fr; }
+  }
+  h1 {
+    font-size: 1.5rem;
+    margin: 0 0 4px;
+  }
+  h2 {
+    font-size: 1.25rem;
+    margin: 0 0 14px;
+  }
+  .pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .pill {
+    border: 1px solid #cfcfd4;
+    background: #fff;
+    border-radius: 999px;
+    padding: 8px 16px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    color: var(--text);
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+  }
+  .pill:hover { border-color: #a8a8ae; }
+  .pill.active {
+    background: var(--accent);
+    color: var(--accent-text);
+    border-color: var(--accent);
+  }
+  input[type="text"], input[type="number"] {
+    width: 100%;
+    padding: 12px 16px;
+    border-radius: 999px;
+    border: 1px solid #cfcfd4;
+    font-size: 0.95rem;
+    background: #fff;
+    color: var(--text);
+  }
+  input::placeholder { color: #9a9aa0; }
+  .results-title {
+    text-align: center;
+    font-size: 1.6rem;
+    margin: 0 0 18px;
+  }
+  .results-lines {
+    text-align: center;
+    font-size: 0.95rem;
+    letter-spacing: 0.02em;
+    line-height: 1.9;
+    color: var(--text);
+  }
+  .results-lines b { font-weight: 700; }
+  .warning {
+    text-align: center;
+    color: #b42318;
+    font-size: 0.85rem;
+    margin-top: 8px;
+  }
+  svg { display: block; margin: 28px auto 0; max-width: 100%; height: auto; }
+  .tick-label { font-size: 13px; fill: var(--muted); font-weight: 600; }
+  footer {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.8rem;
+    margin-top: 8px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="card">
+    <div class="groups">
+
+      <div>
+        <h2>Strength of Peptide</h2>
+        <div class="pills" id="strengthPills"></div>
+        <input type="text" id="strengthCustom" placeholder="Enter custom strength (mg)">
+      </div>
+
+      <div>
+        <h2>Water of Peptide</h2>
+        <div class="pills" id="waterPills"></div>
+        <input type="text" id="waterCustom" placeholder="Enter custom water (mL)">
+      </div>
+
+      <div>
+        <h2>Dose of Peptide</h2>
+        <div class="pills" id="dosePills"></div>
+        <input type="text" id="doseCustom" placeholder="Enter custom dose (mg)">
+      </div>
+
+    </div>
+  </div>
+
+  <div class="card">
+    <h1 class="results-title">Results</h1>
+    <div class="results-lines">
+      <div>PEPTIDE DOSE: <b id="outDose">—</b></div>
+      <div>DRAW SYRINGE TO: <b id="outUnits">—</b></div>
+    </div>
+    <div class="warning" id="outWarning"></div>
+    <svg id="syringe" viewBox="0 0 780 220" xmlns="http://www.w3.org/2000/svg"></svg>
+  </div>
+
+  <footer>This calculator is for reference only. Always confirm dosing with your prescribing clinician.</footer>
+
+</div>
+
+<script>
+const STRENGTHS = [1, 5, 10, 15, 20, 50];
+const WATERS = [0.5, 1.0, 1.5, 2.0, 2.5, 3.0];
+const DOSES = [0.1, 0.25, 0.5, 1, 2, 2.5, 5, 7.5, 10, 12.5, 15];
+
+const state = {
+  strength: 10,
+  water: 3.0,
+  dose: 2.5
+};
+
+function fmt(n) {
+  return (Math.round(n * 100) / 100).toString();
+}
+
+function buildPills(containerId, values, unit, key) {
+  const el = document.getElementById(containerId);
+  el.innerHTML = '';
+  values.forEach(v => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'pill';
+    btn.textContent = v + unit;
+    btn.dataset.value = v;
+    btn.addEventListener('click', () => {
+      state[key] = v;
+      document.getElementById(key + 'Custom').value = '';
+      refreshActive(containerId, v);
+      calculate();
+    });
+    el.appendChild(btn);
+  });
+}
+
+function refreshActive(containerId, activeValue) {
+  const el = document.getElementById(containerId);
+  [...el.children].forEach(btn => {
+    btn.classList.toggle('active', parseFloat(btn.dataset.value) === activeValue);
+  });
+}
+
+function wireCustom(inputId, containerId, key) {
+  const input = document.getElementById(inputId);
+  input.addEventListener('input', () => {
+    const v = parseFloat(input.value);
+    if (!isNaN(v) && v > 0) {
+      state[key] = v;
+      refreshActive(containerId, v);
+      calculate();
+    }
+  });
+}
+
+function calculate() {
+  const { strength, water, dose } = state;
+  const warningEl = document.getElementById('outWarning');
+  warningEl.textContent = '';
+
+  if (!strength || !water || !dose) {
+    document.getElementById('outDose').textContent = '—';
+    document.getElementById('outUnits').textContent = '—';
+    drawSyringe(0);
+    return;
+  }
+
+  const concentration = strength / water; // mg per mL
+  const doseVolumeML = dose / concentration; // mL to draw
+  const units = doseVolumeML * 100; // U-100 insulin syringe units (1 mL = 100 units)
+
+  document.getElementById('outDose').textContent = fmt(dose) + ' mg';
+  document.getElementById('outUnits').textContent = fmt(units) + ' units';
+
+  if (dose > strength) {
+    warningEl.textContent = 'Dose exceeds total peptide in vial — check your inputs.';
+  } else if (units > 100) {
+    warningEl.textContent = 'This draw exceeds a standard 100-unit syringe — consider a larger syringe or different water amount.';
+  }
+
+  drawSyringe(units);
+}
+
+function drawSyringe(units) {
+  const svg = document.getElementById('syringe');
+  const maxUnits = 100;
+  const clamped = Math.max(0, Math.min(units, maxUnits));
+
+  const barrelX = 120;
+  const barrelW = 560;
+  const barrelY = 90;
+  const barrelH = 40;
+  const tipW = 40;
+
+  const fillW = (clamped / maxUnits) * barrelW;
+
+  let ticks = '';
+  for (let u = 0; u <= 100; u++) {
+    const x = barrelX + (u / maxUnits) * barrelW;
+    const isMajor = u % 10 === 0;
+    const isMid = u % 5 === 0;
+    const h = isMajor ? 16 : (isMid ? 11 : 7);
+    ticks += `<line x1="${x}" y1="${barrelY + barrelH}" x2="${x}" y2="${barrelY + barrelH + h}" stroke="var(--barrel)" stroke-width="${isMajor ? 1.6 : 1}"/>`;
+    if (isMajor && u > 0) {
+      ticks += `<text x="${x}" y="${barrelY + barrelH + 34}" text-anchor="middle" class="tick-label">${u}</text>`;
+    }
+  }
+
+  svg.innerHTML = `
+    <line x1="20" y1="${barrelY + barrelH / 2}" x2="${barrelX - tipW}" y2="${barrelY + barrelH / 2}" stroke="var(--barrel)" stroke-width="6"/>
+    <rect x="${barrelX - tipW}" y="${barrelY + 10}" width="${tipW}" height="${barrelH - 20}" fill="var(--barrel)"/>
+    <rect x="${barrelX}" y="${barrelY}" width="${barrelW}" height="${barrelH}" rx="4" fill="#ffffff" stroke="var(--barrel)" stroke-width="2"/>
+    <rect x="${barrelX}" y="${barrelY}" width="${fillW}" height="${barrelH}" rx="4" fill="var(--fill)"/>
+    <line x1="${barrelX}" y1="${barrelY - 22}" x2="${barrelX}" y2="${barrelY + barrelH + 22}" stroke="var(--barrel)" stroke-width="4"/>
+    ${ticks}
+    <rect x="${barrelX + barrelW}" y="${barrelY - 30}" width="30" height="${barrelH + 60}" fill="var(--barrel)"/>
+    <rect x="${barrelX + barrelW + 30}" y="${barrelY - 45}" width="16" height="${barrelH + 90}" fill="var(--barrel)"/>
+    <rect x="${barrelX + barrelW + 46}" y="${barrelY - 10}" width="60" height="10" fill="var(--barrel)"/>
+    <rect x="${barrelX + barrelW + 46}" y="${barrelY + barrelH}" width="60" height="10" fill="var(--barrel)"/>
+  `;
+}
+
+buildPills('strengthPills', STRENGTHS, 'mg', 'strength');
+buildPills('waterPills', WATERS, 'mL', 'water');
+buildPills('dosePills', DOSES, 'mg', 'dose');
+wireCustom('strengthCustom', 'strengthPills', 'strength');
+wireCustom('waterCustom', 'waterPills', 'water');
+wireCustom('doseCustom', 'dosePills', 'dose');
+
+refreshActive('strengthPills', state.strength);
+refreshActive('waterPills', state.water);
+refreshActive('dosePills', state.dose);
+calculate();
+</script>
+</body>
+</html>
