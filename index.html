@@ -37,6 +37,12 @@
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 28px;
+    text-align: center;
+  }
+  .groups > div {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
   }
   @media (max-width: 760px) {
     .groups { grid-template-columns: 1fr; }
