@@ -242,16 +242,18 @@ function drawSyringe(units) {
   const clamped = Math.max(0, Math.min(units, maxUnits));
 
   const barrelX = 120;
-  const barrelW = 560;
+  const scaleW = 560;
+  const overshoot = 0.05; // extend the barrel this fraction of the scale past the 100 mark
+  const barrelW = scaleW * (1 + overshoot);
   const barrelY = 90;
   const barrelH = 40;
   const tipW = 40;
 
-  const fillW = (clamped / maxUnits) * barrelW;
+  const fillW = (clamped / maxUnits) * scaleW;
 
   let ticks = '';
   for (let u = 0; u <= 100; u++) {
-    const x = barrelX + (u / maxUnits) * barrelW;
+    const x = barrelX + (u / maxUnits) * scaleW;
     const isMajor = u % 10 === 0;
     const isMid = u % 5 === 0;
     const h = isMajor ? 16 : (isMid ? 11 : 7);
